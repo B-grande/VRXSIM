@@ -1,0 +1,29 @@
+ekf_filter_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 30.0
+    sensor_timeout: 0.1
+
+    two_d_mode: true
+    publish_tf: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: wamv/wamv/base_link
+    world_frame: odom
+
+    # now coming from navsat_transform or GZ‐Odometry
+    odom0: /wamv/pose
+    odom0_config: [true, true, false,  # pos x,y,z
+                   false,  true,  true,   # rot roll,pitch,yaw
+                   false, false, false,  # vel x,y,z
+                   false, false, false,  # ang vel x,y,z
+                   false, false, false]  # lin accel x,y,z
+
+    # correct IMU topic, fuse ang vel + lin acc
+    imu0: /wamv/sensors/imu/imu/data
+    imu0_config: [false, false, false,  # no pos
+                  false, false, false,  # no orientation
+                  true,  true,  true,   # fuse angular velocity x,y,z
+                  true,  true,  true,   # fuse linear acceleration x,y,z
+                  false, false, false]  # no magnetic field (unused)

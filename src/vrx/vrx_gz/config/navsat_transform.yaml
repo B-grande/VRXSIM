@@ -1,0 +1,21 @@
+navsat_transform_node:
+  ros__parameters:
+    use_sim_time: true
+
+    # GPS and IMU inputs
+    gps0: /wamv/sensors/gps/gps/fix
+    gps0_queue_size: 10
+    imu0: /wamv/sensors/imu/imu/data
+    imu0_queue_size: 30
+
+    # Output odometry frame for EKF
+    odom_frame: odom
+    base_link_frame: wamv/wamv/base_link
+
+    # Optional settings
+    use_odometry_yaw: true        # fuse yaw from IMU
+    zero_altitude: true          # treat all GPS z as 0
+    broadcast_utm_transform: false
+    # If you have magnetic data:
+    # mag0: /wamv/sensors/imu/mag/data
+    # mag0_queue_size: 10
