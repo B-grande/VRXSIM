@@ -2,29 +2,34 @@ slam_toolbox:
   ros__parameters:
     use_sim_time: true
 
-    # what map frame to use
+    # Frame names must match your TF tree
     map_frame: map
-    # your robot's odom & base frames
     odom_frame: odom
-    base_frame: wamv/wamv/base_link
+    base_frame: wamv/base_link
 
-    # subscribe to your downward lidar scan
-    scan_topic: /wamv/sensors/lidars/laser_down/points
+    # Lidar scan input
+    scan_topic: /wamv/sensors/lidars/laser_down/scan
 
-    # SLAM Toolbox options
-    mode: online_async
-    resolution: 0.05           # grid resolution (m)
-    max_laser_range: 50.0     # lidar max range
-    min_range: 0.1
-    mapping_time_limit: 0.2   # seconds per update
-    transform_publish_period: 0.05
+    # How big your map pixels are (meters per cell)
+    resolution: 0.05
 
-    # pose graph optimization settings
+    # Publish the map every N seconds
+    publish_period_sec: 1.0
+
+    # Range limits on the lidar
+    minimum_range: 0.12
+    maximum_range: 30.0
+
+    # Enable loop closure?
+    use_online_correlative_scan_matching: false
+
+    # Pose graph optimization
     optimize_every_n_nodes: 20
-    constraint_sampling_ratio: 0.3
-    max_constraint_distance: 5.0
-    loop_closure_search_radius: 2.0
+    max_laser_scans: 10
 
-    # these control CPU/GPU usage—you can crank them up
-    max_expand_iters: 100
-    max_submaps_to_keep: 10
+    # Submap parameters (for online_async mode)
+    submap_size: 20.0               # meters
+    submap_publish_period_sec: 0.5
+
+    # Time to wait for transforms
+    transform_publish_period: 0.05

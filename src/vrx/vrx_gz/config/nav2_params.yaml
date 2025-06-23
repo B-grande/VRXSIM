@@ -5,7 +5,11 @@
 map_server:
   ros__parameters:
     use_sim_time: true
-    mode: subscription
+
+    # satisfy the lifecycle loader
+    yaml_filename: ""
+
+    # subscription instead of static file
     subscribe_to_map_topic: true
     map_topic: /map
 
@@ -132,7 +136,7 @@ recoveries_server:
     plugin_libraries: ["nav2_recoveries/NavRecovery", "nav2_recoveries/BackUp"]
     recovery_plugins: ["spin", "back_up"]
 
-# ─── LIFECYCLE MANAGERS ─────────────────────────────────────
+# ─── LIFECYCLE MANAGERS ────────────────────────────────────
 lifecycle_manager_localization:
   ros__parameters:
     use_sim_time: true
@@ -153,7 +157,7 @@ lifecycle_manager_navigation:
       - waypoint_follower
       - recoveries_server
 
-# ─── COLLISION MONITOR ──────────────────────────────────────────
+# ─── COLLISION MONITOR ──────────────────────────────────────
 collision_monitor:
   ros__parameters:
     use_sim_time: true
@@ -169,8 +173,8 @@ collision_monitor:
 
     # ── HARD ZONE: emergency stop if anything appears within 0–0.10 m below the lidar
     HardZone:
-      type: "circle"               # you can also use "polygon" with explicit points
-      radius: 1.0                  # adjust to cover your robot’s footprint
+      type: "circle"
+      radius: 1.0
       action_type: "stop"
       min_points: 1
       visualize: true
@@ -198,6 +202,3 @@ collision_monitor:
       min_height: 0.10
       max_height: 0.25
       enabled: true
-
-
-
