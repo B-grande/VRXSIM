@@ -34,7 +34,7 @@ def launch(context, *args, **kwargs):
         vrx_gz.launch.simulation(world_base, headless, paused, extra_args)
     )
 
-    # 2) Spawn the WAM-V (or whatever is in your config_file)
+    # 2) Spawn the WAM-V (or from your config_file)
     models = []
     if config_file:
         with open(config_file) as f:
@@ -48,15 +48,14 @@ def launch(context, *args, **kwargs):
         vrx_gz.launch.spawn(sim_mode, world_base, models, robot_name)
     )
 
-    # 3) Competition bridges (if enabled)
+    # 3) Competition bridges
     if sim_mode in ['bridge', 'full'] and bridge_topics:
         launch_processes.extend(
             vrx_gz.launch.competition_bridges(world_base, competition_mode)
         )
 
-    # 4) Sensor bridges
+    # 4) Sensor bridges (IMU, GPS, pose, cmd_vel, lidar)
     if sim_mode in ['bridge', 'full']:
-        # IMU & GPS → ROS
         launch_processes.append(Node(
             package='ros_gz_bridge', executable='parameter_bridge', name='imu_gps_bridge',
             output='screen',
@@ -67,7 +66,6 @@ def launch(context, *args, **kwargs):
                   'sensor/gps_sensor/fix@ignition.msgs.Gps[nav_msgs/msg/NavSatFix'
             ],
         ))
-        # Pose → Odometry
         launch_processes.append(Node(
             package='ros_gz_bridge', executable='parameter_bridge', name='pose_to_odom_bridge',
             output='screen',
@@ -76,7 +74,6 @@ def launch(context, *args, **kwargs):
             ],
             remappings=[(f'/world/{world_base}/model/wamv/pose', '/wamv/odom')]
         ))
-        # NavSat transform
         launch_processes.append(Node(
             package='robot_localization', executable='navsat_transform_node',
             name='navsat_transform', namespace='wamv', output='screen',
@@ -86,13 +83,11 @@ def launch(context, *args, **kwargs):
                 'navsat_transform.yaml'
             ])]
         ))
-        # cmd_vel bridge
         launch_processes.append(Node(
             package='ros_gz_bridge', executable='parameter_bridge', name='cmd_vel_bridge',
             output='screen',
             arguments=['/wamv/cmd_vel@geometry_msgs/msg/Twist@ignition.msgs.Twist']
         ))
-        # downward lidar for SLAM & costmap
         launch_processes.append(Node(
             package='ros_gz_bridge', executable='parameter_bridge', name='laser_down_bridge',
             output='screen',
@@ -128,27 +123,26 @@ def launch(context, *args, **kwargs):
         remappings=[('scan', '/wamv/sensors/lidars/laser_down/scan')]
     ))
 
-    # 7) Static map→odom transform
+    # 7) Static map→odom
     launch_processes.append(Node(
         package='tf2_ros', executable='static_transform_publisher',
         name='map_to_odom', output='screen',
         arguments=['0','0','0','0','0','0','map','odom']
     ))
 
-    # 8) **Static odom→base_link transform**  
-    #    (so rviz & Nav2 see your robot in the odom frame)
+    # 8) Static odom→base_link
     launch_processes.append(Node(
         package='tf2_ros', executable='static_transform_publisher',
         name='odom_to_base_link', output='screen',
         arguments=[
             '0','0','0',        # x y z
             '0','0','0','1',    # qx qy qz qw
-            'odom',             # parent frame
-            'wamv/wamv/base_link'  # child frame
+            'odom',             # parent
+            'wamv/wamv/base_link'  # child
         ]
     ))
 
-    # 9) Map server (subscribe to SLAM map)
+    # 9) Map Server (subscribe to /map)
     launch_processes.append(Node(
         package='nav2_map_server', executable='map_server', name='map_server',
         output='screen',
@@ -160,7 +154,7 @@ def launch(context, *args, **kwargs):
         }]
     ))
 
-    # 10) Nav2 bringup (autostart=False → click “Startup” in RViz)
+    # 10) Nav2 bringup (autostart off → click “Startup” in RViz)
     launch_processes.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -178,6 +172,19 @@ def launch(context, *args, **kwargs):
                 'nav2_params.yaml'
             )
         }.items()
+    ))
+
+    # 11) RViz2
+    launch_processes.append(Node(
+        package='rviz2', executable='rviz2',
+        name='rviz2', output='screen',
+        arguments=[
+            '-d', PathJoinSubstitution([
+                get_package_share_directory('vrx_gazebo'),
+                'config',
+                'rviz_vrx_rsp.rviz'
+            ])
+        ]
     ))
 
     return launch_processes
