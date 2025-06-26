@@ -1,19 +1,28 @@
-# ────────────────────────────────────────────────────────────
-# nav2_params.yaml (minimal setup + waypoint follower)
-# ────────────────────────────────────────────────────────────
-
 map_server:
   ros__parameters:
     use_sim_time: true
-
-    # satisfy the lifecycle loader
-    yaml_filename: ""
-
-    # subscription instead of static file
+    yaml_filename: ""               # (we load the map over /map topic)
     subscribe_to_map_topic: true
     map_topic: /map
 
-# ─── LOCAL COSTMAP ──────────────────────────────────────────
+
+
+################################################################################
+# SLAM Toolbox (if you want SLAM instead of AMCL)
+################################################################################
+slam_toolbox:
+  ros__parameters:
+    use_sim_time: true
+    map_file_name: ""               # save/load file (empty = live only)
+    scan_topic: /wamv/sensors/lidars/laser_down/scan
+    odom_topic: /wamv/odom
+    publish_period: 5.0
+    max_laser_range: 30.0
+    # (drop in any of your slam_toolbox params here…)
+
+################################################################################
+# LOCAL COSTMAP
+################################################################################
 local_costmap:
   ros__parameters:
     use_sim_time: true
@@ -41,7 +50,9 @@ local_costmap:
       plugin: "nav2_costmap_2d::InflationLayer"
       inflation_radius: 1.0
 
-# ─── GLOBAL COSTMAP ─────────────────────────────────────────
+################################################################################
+# GLOBAL COSTMAP
+################################################################################
 global_costmap:
   ros__parameters:
     use_sim_time: true
@@ -71,40 +82,43 @@ global_costmap:
       plugin: "nav2_costmap_2d::InflationLayer"
       inflation_radius: 1.0
 
-# ─── PLANNER SERVER ─────────────────────────────────────────
+################################################################################
+# PLANNER SERVER
+################################################################################
 planner_server:
   ros__parameters:
     use_sim_time: true
     expected_planner_frequency: 20.0
     plugin_libraries: ["nav2_navfn_planner"]
-    planner_plugins:  ["GridBased"]
-
+    planner_plugins: ["GridBased"]
     GridBased:
-      plugin:        "nav2_navfn_planner::NavfnPlanner"
-      tolerance:     0.5
-      use_astar:     false
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.5
+      use_astar: false
       allow_unknown: true
 
-# ─── CONTROLLER SERVER ──────────────────────────────────────
+################################################################################
+# CONTROLLER SERVER
+################################################################################
 controller_server:
   ros__parameters:
     use_sim_time: true
     plugin_libraries: ["nav2_regulated_pure_pursuit_controller"]
     controller_plugins: ["FollowPath"]
-
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
       lookahead_distance: 1.0
       desired_forward_speed: 0.5
       allow_backwards_motion: false
 
-# ─── SMOOTHER SERVER ────────────────────────────────────────
+################################################################################
+# SMOOTHER SERVER
+################################################################################
 smoother_server:
   ros__parameters:
     use_sim_time: true
     plugin_libraries: ["nav2_smoother"]
     smoother_plugins: ["savitzky_golay_smoother"]
-
     savitzky_golay_smoother:
       plugin: "nav2_smoother::SavitzkyGolaySmoother"
       window_length: 7
@@ -113,30 +127,123 @@ smoother_server:
       refinement_num: 2
       enforce_path_inversion: true
 
-# ─── BEHAVIOR TREE NAVIGATOR ────────────────────────────────
+################################################################################
+# BEHAVIOR TREE NAVIGATOR
+################################################################################
 bt_navigator:
   ros__parameters:
     use_sim_time: true
+    global_frame: map
+    robot_base_frame: wamv/wamv/base_link
+    odom_topic: /wamv/odom
     plugin_libraries: ["nav2_bt_navigator"]
     default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bringup/behavior_trees/navigate_to_pose.xml"
     default_nav_through_poses_bt_xml: "/opt/ros/jazzy/share/nav2_bringup/behavior_trees/navigate_through_poses.xml"
 
-# ─── WAYPOINT FOLLOWER ──────────────────────────────────────
+################################################################################
+# WAYPOINT FOLLOWER
+################################################################################
 waypoint_follower:
   ros__parameters:
+    use_sim_time: true
     loop_rate: 20
     stop_on_failure: false
     waypoint_task_executor_plugin_ids: ["wait_at_waypoint"]
     waypoint_task_executor_plugins: ["nav2_waypoint_follower::WaitAtWaypoint"]
 
-# ─── RECOVERIES SERVER ──────────────────────────────────────
+################################################################################
+# RECOVERIES SERVER
+################################################################################
 recoveries_server:
   ros__parameters:
     use_sim_time: true
     plugin_libraries: ["nav2_recoveries/NavRecovery", "nav2_recoveries/BackUp"]
     recovery_plugins: ["spin", "back_up"]
 
-# ─── LIFECYCLE MANAGERS ────────────────────────────────────
+################################################################################
+# COLLISION MONITOR
+################################################################################
+collision_monitor:
+  ros__parameters:
+    use_sim_time: true
+    base_frame_id: wamv/wamv/base_link
+    odom_frame_id: odom
+    observation_sources: ["laser_down_hard", "laser_down_soft"]
+    polygons: ["HardZone", "SoftZone"]
+    source_timeout: 0.0
+
+    HardZone:
+      type: "circle"
+      radius: 1.0
+      action_type: "stop"
+      min_points: 1
+      visualize: true
+
+    SoftZone:
+      type: "circle"
+      radius: 1.0
+      action_type: "slowdown"
+      slowdown_ratio: 0.5
+      min_points: 1
+      visualize: true
+
+    laser_down_hard:
+      type: "scan"
+      topic: /wamv/sensors/lidars/laser_down/scan
+      min_height: 0.0
+      max_height: 0.10
+      enabled: true
+
+    laser_down_soft:
+      type: "scan"
+      topic: /wamv/sensors/lidars/laser_down/scan
+      min_height: 0.10
+      max_height: 0.25
+      enabled: true
+
+################################################################################
+# DOCKING SERVER
+################################################################################
+docking_server:
+  ros__parameters:
+    use_sim_time: true
+    controller_frequency: 50.0
+    initial_perception_timeout: 5.0
+    wait_charge_timeout: 5.0
+    dock_approach_timeout: 30.0
+    undock_linear_tolerance: 0.05
+    undock_angular_tolerance: 0.1
+    max_retries: 3
+    base_frame: wamv/wamv/base_link
+    fixed_frame: odom
+    service_introspection_mode: "disabled"
+
+    dock_plugins: ["simple_charging_dock"]
+    simple_charging_dock:
+      plugin: "opennav_docking::SimpleChargingDock"
+      docking_threshold: 0.05
+      staging_x_offset: -0.7
+      use_external_detection_pose: true
+      external_detection_timeout: 1.0
+      external_detection_translation_x: -0.18
+      external_detection_rotation_roll: -1.57
+      use_battery_status: false
+      use_stall_detection: false
+      filter_coef: 0.1
+
+    controller:
+      k_phi: 3.0
+      k_delta: 2.0
+      v_linear_min: 0.15
+      v_linear_max: 0.15
+      use_collision_detection: true
+      costmap_topic: "local_costmap/costmap_raw"
+      footprint_topic: "local_costmap/published_footprint"
+      transform_tolerance: 0.1
+
+################################################################################
+# LIFECYCLE MANAGERS
+################################################################################
 lifecycle_manager_localization:
   ros__parameters:
     use_sim_time: true
@@ -156,49 +263,5 @@ lifecycle_manager_navigation:
       - bt_navigator
       - waypoint_follower
       - recoveries_server
-
-# ─── COLLISION MONITOR ──────────────────────────────────────
-collision_monitor:
-  ros__parameters:
-    use_sim_time: true
-
-    # which sensors to watch (we’ll split the same laser into two height filters)
-    observation_sources: ["laser_down_hard", "laser_down_soft"]
-
-    # list your zones—stop (hard) and slowdown (soft)
-    polygons: ["HardZone", "SoftZone"]
-
-    # don’t auto‐stop if data drops out
-    source_timeout: 0.0
-
-    # ── HARD ZONE: emergency stop if anything appears within 0–0.10 m below the lidar
-    HardZone:
-      type: "circle"
-      radius: 1.0
-      action_type: "stop"
-      min_points: 1
-      visualize: true
-
-    # ── SOFT ZONE: slowdown if anything appears within 0.10–0.25 m below the lidar
-    SoftZone:
-      type: "circle"
-      radius: 1.0
-      action_type: "slowdown"
-      slowdown_ratio: 0.5
-      min_points: 1
-      visualize: true
-
-    # ── your two “virtual” lasers with different height filters ──
-    laser_down_hard:
-      type: "scan"
-      topic: "/wamv/sensors/lidars/laser_down/scan"
-      min_height: 0.0
-      max_height: 0.10
-      enabled: true
-
-    laser_down_soft:
-      type: "scan"
-      topic: "/wamv/sensors/lidars/laser_down/scan"
-      min_height: 0.10
-      max_height: 0.25
-      enabled: true
+      - collision_monitor
+      - docking_server
