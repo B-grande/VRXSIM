@@ -11,7 +11,7 @@ ekf_filter_node:
     # ─── Correct frame-ID parameters ────────────────────────
     world_frame_id: map
     odom_frame_id: odom
-    base_link_frame_id: wamv/base_link
+    base_link_frame_id: wamv/wamv/base_link
 
     # ─── Odom input ─────────────────────────────────────────
     odom0: /wamv/odom

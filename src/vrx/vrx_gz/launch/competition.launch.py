@@ -73,38 +73,9 @@ def launch(context, *args, **kwargs):
              parameters=[os.path.join(config_dir, 'navsat_transform.yaml'), {'use_sim_time': True}])
     )
 
-    # --- Static TF chain: world -> map -> odom -> base_link ---
-    # identity world->map
-    launch_processes.append(
-        Node(package='tf2_ros', executable='static_transform_publisher', name='world_to_map', output='screen',
-             arguments=['0','0','0','0','0','0','world','map'])
-    )
-    # identity map->odom
-    launch_processes.append(
-        Node(package='tf2_ros', executable='static_transform_publisher', name='map_to_odom', output='screen',
-             arguments=['0','0','0','0','0','0','map','odom'])
-    )
-    # identity odom->wamv/base_link
-    launch_processes.append(
-        Node(package='tf2_ros', executable='static_transform_publisher', name='odom_to_base_link', output='screen',
-             arguments=['0','0','0','0','0','0','odom','wamv/base_link'])
-    )
-    launch_processes.append(
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='base_link_alias',
-            output='screen',
-            arguments=['0', '0', '0', '0', '0', '0', 'wamv/base_link', 'base_link']
-        )
-    )
+    
 
-    # --- SLAM Toolbox (live mapping) ---
-    launch_processes.append(
-        Node(package='slam_toolbox', executable='async_slam_toolbox_node', name='slam_toolbox', output='screen',
-             parameters=[os.path.join(config_dir, 'slam_params.yaml'), {'use_sim_time': True}],
-             remappings=[('scan', '/wamv/sensors/lidars/laser_down/scan')])
-    )
+    
 
     # --- Nav2 bringup (delayed) ---
     bringup = IncludeLaunchDescription(

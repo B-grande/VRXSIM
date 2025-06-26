@@ -82,6 +82,9 @@ global_costmap:
       plugin: "nav2_costmap_2d::InflationLayer"
       inflation_radius: 1.0
 
+
+      #denoise layer skimming cost map and 
+
 ################################################################################
 # PLANNER SERVER
 ################################################################################
