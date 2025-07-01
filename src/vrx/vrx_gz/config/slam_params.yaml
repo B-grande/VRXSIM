@@ -7,7 +7,7 @@ slam_toolbox:
     # TF frames
     map_frame: map
     odom_frame: odom
-    base_frame: wamv/wamv/base_link
+    base_frame: wamv/wamv/base_link/laser_down
 
     # ↓↓ only your downward LiDAR ↓↓
     scan_topic: /wamv/sensors/lidars/laser_down/scan
@@ -30,5 +30,3 @@ slam_toolbox:
 
     submap_size: 5.0
     submap_publish_period_sec: 0.5
-
-

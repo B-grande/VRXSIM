@@ -1,4 +1,3 @@
-# competition.launch.py
 # Copyright 2021 Open Source Robotics Foundation, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,30 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument
+from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
+import os
 
 import vrx_gz.launch
 from vrx_gz.model import Model
+from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import IncludeLaunchDescription
+from launch.actions import TimerAction
+from launch.actions import GroupAction
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 
 
 def launch(context, *args, **kwargs):
-    # Retrieve launch arguments
-    pkg_share = get_package_share_directory('vrx_gz')
-    config_dir = os.path.join(pkg_share, 'config')
-    nav2_bringup_dir = get_package_share_directory('nav2_bringup')
-
-    # Common args
     config_file = LaunchConfiguration('config_file').perform(context)
     world_name = LaunchConfiguration('world').perform(context)
     sim_mode = LaunchConfiguration('sim_mode').perform(context)
-    bridge_topics = LaunchConfiguration('bridge_competition_topics').perform(context).lower() == 'true'
+    bridge_competition_topics = LaunchConfiguration(
+        'bridge_competition_topics').perform(context).lower() == 'true'
     robot = LaunchConfiguration('robot').perform(context)
     headless = LaunchConfiguration('headless').perform(context).lower() == 'true'
     robot_urdf = LaunchConfiguration('urdf').perform(context)
@@ -46,82 +45,122 @@ def launch(context, *args, **kwargs):
 
     launch_processes = []
 
-    # --- Gazebo sim + spawn ---
     models = []
-    if config_file:
-        with open(config_file, 'r') as f:
-            models = Model.FromConfig(f)
+    if config_file and config_file != '':
+        with open(config_file, 'r') as stream:
+            models = Model.FromConfig(stream)
     else:
-        m = Model('wamv', 'wam-v', [-532, 162, 0, 0, 0, 1])
-        if robot_urdf:
-            m.set_urdf(robot_urdf)
-        models.append(m)
+      m = Model('wamv', 'wam-v', [-532, 162, 0, 0, 0, 1])
+      if robot_urdf and robot_urdf != '':
+          m.set_urdf(robot_urdf)
+      models.append(m)
 
-    world_base, _ = os.path.splitext(world_name)
-    launch_processes.extend(vrx_gz.launch.simulation(world_base, headless, gz_paused, extra_gz_args))
-    launch_processes.extend(vrx_gz.launch.spawn(sim_mode, world_base, models, robot))
-    if sim_mode in ['bridge', 'full'] and bridge_topics:
-        launch_processes.extend(vrx_gz.launch.competition_bridges(world_base, competition_mode))
+    world_name, ext = os.path.splitext(world_name)
+    launch_processes.extend(vrx_gz.launch.simulation(world_name, headless, 
+                                                     gz_paused, extra_gz_args))
+    world_name_base = os.path.basename(world_name)
+    launch_processes.extend(vrx_gz.launch.spawn(sim_mode, world_name_base, models, robot))
 
-    # --- Robot state estimation ---
-    launch_processes.append(
-        Node(package='robot_localization', executable='ekf_node', name='ekf_filter_node', output='screen',
-             parameters=[os.path.join(config_dir, 'ekf.yaml'), {'use_sim_time': True}])
+    if (sim_mode == 'bridge' or sim_mode == 'full') and bridge_competition_topics:
+        launch_processes.extend(vrx_gz.launch.competition_bridges(world_name_base, competition_mode))
+
+    return launch_processes
+
+
+def generate_launch_description():
+    rvz = Node(
+        package='rviz2',
+        namespace='',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d' + os.path.join(get_package_share_directory('vrx_gazebo'), 'config', 'rviz_vrx_rsp.rviz')]
     )
-    launch_processes.append(
-        Node(package='robot_localization', executable='navsat_transform_node', name='navsat_transform_node', output='screen',
-             parameters=[os.path.join(config_dir, 'navsat_transform.yaml'), {'use_sim_time': True}])
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[os.path.join(get_package_share_directory('vrx_gz'), 'config', 'ekf.yaml')]
     )
-
-    # --- SLAM Toolbox ---
+    config_dir = os.path.join(get_package_share_directory('vrx_gz'), 'config')
     slam_toolbox_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')),
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')
+        ),
         launch_arguments={
             'slam_params_file': os.path.join(config_dir, 'slam_params.yaml'),
             'use_sim_time': 'True',
             'autostart': 'True',
         }.items()
     )
-    launch_processes.append(slam_toolbox_launch)
-
-    # --- Nav2 bringup (delayed) ---
-    bringup = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
+    delayed_slam_toolbox = TimerAction(
+        period=30.0,
+        actions=[slam_toolbox_launch]
+    )
+    nav2_params = os.path.join(get_package_share_directory('vrx_gz'), 'config', 'nav2_params.yaml')
+    nav2_bringup_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
+        ),
         launch_arguments={
-            'use_sim_time': 'True',
-            'params_file': os.path.join(config_dir, 'nav2_params.yaml'),
+            'params_file': nav2_params,
+            'use_sim_time': 'true',
             'autostart': 'true',
         }.items()
     )
-    launch_processes.append(TimerAction(period=3.0, actions=[bringup]))
-
-    # --- RViz2 ---
-    launch_processes.append(
-        Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            output='screen',
-            arguments=['-d', os.path.join(get_package_share_directory('vrx_gazebo'), 'config', 'rviz_vrx_rsp.rviz'), '--ros-args', '-r', '__ns:=/wamv']
-        )
+    delayed_nav2 = TimerAction(
+        period=30.0,
+        actions=[nav2_bringup_launch]
     )
-
-    return launch_processes
-
-
-def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('world', default_value='sydney_regatta', description='Name of world'),
-        DeclareLaunchArgument('sim_mode', default_value='full', description='Simulation mode: sim, bridge, full'),
-        DeclareLaunchArgument('bridge_competition_topics', default_value='True', description='Bridge topics'),
-        DeclareLaunchArgument('config_file', default_value='', description='YAML file for models'),
-        DeclareLaunchArgument('robot', default_value='', description='Name of robot'),
-        DeclareLaunchArgument('headless', default_value='False', description='Run Gazebo headless'),
-        DeclareLaunchArgument('urdf', default_value='', description='Override URDF'),
-        DeclareLaunchArgument('paused', default_value='False', description='Start paused'),
-        DeclareLaunchArgument('competition_mode', default_value='False', description='Competition mode'),
-        DeclareLaunchArgument('extra_gz_args', default_value='', description='Extra Gazebo args'),
-        DeclareLaunchArgument('use_sim_time', default_value='True', description='Use simulation clock'),
-        DeclareLaunchArgument('autostart', default_value='true', description='Nav2 autostart'),
+        # Launch Arguments
+        DeclareLaunchArgument(
+            'world',
+            default_value='sydney_regatta',
+            description='Name of world'),
+        DeclareLaunchArgument(
+            'sim_mode',
+            default_value='full',
+            description='Simulation mode: "full", "sim", "bridge".'
+                        'full: spawns robot and launch ros_gz bridges, '
+                        'sim: spawns robot only, '
+                        'bridge: launch ros_gz bridges only.'),
+        DeclareLaunchArgument(
+            'bridge_competition_topics',
+            default_value='True',
+            description='True to bridge competition topics, False to disable bridge.'),
+        DeclareLaunchArgument(
+            'config_file',
+            default_value='',
+            description='YAML configuration file to spawn'),
+        DeclareLaunchArgument(
+            'robot',
+            default_value='',
+            description='Name of robot to spawn if specified. '
+                        'This must match one of the robots in the config_file'),
+        DeclareLaunchArgument(
+            'headless',
+            default_value='False',
+            description='True to run simulation headless (no GUI). '),
+        DeclareLaunchArgument(
+            'urdf',
+            default_value='',
+            description='URDF file of the wam-v model. '),
+        DeclareLaunchArgument(
+            'paused',
+            default_value='False',
+            description='True to start the simulation paused. '),
+        DeclareLaunchArgument(
+            'competition_mode',
+            default_value='False',
+            description='True to disable debug topics. '),
+        DeclareLaunchArgument(
+            'extra_gz_args',
+            default_value='',
+            description='Additional arguments to be passed to gz sim. '),
         OpaqueFunction(function=launch),
+        ekf_node,
+        delayed_slam_toolbox,
+        delayed_nav2,
+        rvz
     ])
