@@ -73,9 +73,16 @@ def launch(context, *args, **kwargs):
              parameters=[os.path.join(config_dir, 'navsat_transform.yaml'), {'use_sim_time': True}])
     )
 
-    
-
-    
+    # --- SLAM Toolbox ---
+    slam_toolbox_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')),
+        launch_arguments={
+            'slam_params_file': os.path.join(config_dir, 'slam_params.yaml'),
+            'use_sim_time': 'True',
+            'autostart': 'True',
+        }.items()
+    )
+    launch_processes.append(slam_toolbox_launch)
 
     # --- Nav2 bringup (delayed) ---
     bringup = IncludeLaunchDescription(
@@ -90,8 +97,13 @@ def launch(context, *args, **kwargs):
 
     # --- RViz2 ---
     launch_processes.append(
-        Node(package='rviz2', executable='rviz2', name='rviz2', output='screen',
-             arguments=['-d', os.path.join(get_package_share_directory('vrx_gazebo'), 'config', 'rviz_vrx_rsp.rviz')])
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='screen',
+            arguments=['-d', os.path.join(get_package_share_directory('vrx_gazebo'), 'config', 'rviz_vrx_rsp.rviz'), '--ros-args', '-r', '__ns:=/wamv']
+        )
     )
 
     return launch_processes

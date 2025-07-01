@@ -1,0 +1,4 @@
+global_costmap:
+  ros__parameters:
+    robot_base_frame: test_frame
+    foo: bar

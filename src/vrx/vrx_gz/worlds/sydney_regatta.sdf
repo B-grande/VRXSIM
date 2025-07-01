@@ -360,7 +360,7 @@
       <plugin name="vrx::PolyhedraBuoyancyDrag"
               filename="libPolyhedraBuoyancyDrag.so">
         <fluid_density>1000</fluid_density>
-        <fluid_level>0.0</fluid_level>
+        <fluid_level>1.0</fluid_level>
         <linear_drag>25.0</linear_drag>
         <angular_drag>2.0</angular_drag>
         <buoyancy name="collision_outer">
@@ -634,6 +634,33 @@
         }
       </message>
     </plugin>
+
+    <!-- Seafloor (visible box) -->
+    <model name="seafloor_box">
+      <static>true</static>
+      <pose>0 0 -2 0 0 0</pose> <!-- Lowered from 0 to -5 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>5000 5000 1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>5000 5000 1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.4 0.2 1</ambient>
+            <diffuse>0.2 0.4 0.2 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
 
   </world>
 </sdf>

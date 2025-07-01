@@ -1,35 +1,34 @@
 slam_toolbox:
   ros__parameters:
     use_sim_time: true
+    mode: online_async
+    map_file_name: ""                # live only
 
-    # Frame names must match your TF tree
+    # TF frames
     map_frame: map
     odom_frame: odom
-    base_frame: wamv/base_link
+    base_frame: wamv/wamv/base_link
 
-    # Lidar scan input
+    # ↓↓ only your downward LiDAR ↓↓
     scan_topic: /wamv/sensors/lidars/laser_down/scan
-
-    # How big your map pixels are (meters per cell)
     resolution: 0.05
 
-    # Publish the map every N seconds
-    publish_period_sec: 1.0
+    # —— CORRECT PUBLISH PARAMETERS ——
+    map_publish_period_sec:           0.5   # republish /map twice a second
+    transform_publish_period_sec:     0.05  # republish map→odom TF 
 
-    # Range limits on the lidar
-    minimum_range: 0.12
-    maximum_range: 30.0
+    # laser limits (match URDF)
+    min_laser_range: 0.1
+    max_laser_range: 20.0
 
-    # Enable loop closure?
+    message_filter_queue_size: 100
     use_online_correlative_scan_matching: false
 
-    # Pose graph optimization
-    optimize_every_n_nodes: 20
-    max_laser_scans: 10
+    # —— FORCE FIRST‐SCAN OPTIMIZE & PUBLISH ——
+    optimize_every_n_nodes: 1
+    max_laser_scans:       1
 
-    # Submap parameters (for online_async mode)
-    submap_size: 20.0               # meters
+    submap_size: 5.0
     submap_publish_period_sec: 0.5
 
-    # Time to wait for transforms
-    transform_publish_period: 0.05
+

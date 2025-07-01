@@ -184,8 +184,8 @@
 <joint name="laser_down_joint" type="fixed">
   <parent link="${namespace}/base_link"/>
   <child link="laser_down_link"/>
-  <!-- Adjust the xyz position to your desired sensor placement -->
-  <origin xyz="0 0 -0.1" rpy="0 0 0"/>
+  <!-- Rotated 90 degrees about X to point scan directly down -->
+  <origin xyz="0 0 -0.1" rpy="1.5708 0 0"/>
 </joint>
 
 <!-- Gazebo sensor definition -->
@@ -196,14 +196,14 @@
     <ray>
       <scan>
         <horizontal>
-          <samples>1</samples>
-          <min_angle>0</min_angle>
-          <max_angle>0</max_angle>
+          <samples>360</samples>
+          <min_angle>-3.14159</min_angle>
+          <max_angle>3.14159</max_angle>
         </horizontal>
       </scan>
       <range>
         <min>0.1</min>
-        <max>5.0</max>
+        <max>20.0</max>
       </range>
     </ray>
     <plugin name="ros_gz_sensor_laser" filename="libros_gz_sensor_laser.so">
@@ -211,15 +211,39 @@
         <namespace>/wamv</namespace>
         <remapping>~/out:=laser_down/scan</remapping>
       </ros>
-      <frame_name>laser_down_link</frame_name>
+      <frame_name>wamv/wamv/base_link</frame_name>
       <output_type>sensor_msgs/LaserScan</output_type>
     </plugin>
   </sensor>
 </gazebo>
 
-
-
-
-
+<!-- Seafloor (visible box) -->
+<gazebo reference="world">
+  <model name="seafloor_box">
+    <static>true</static>
+    <pose>0 0 0 0 0 0</pose>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>5000 5000 1</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>5000 5000 1</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.4 0.2 1</ambient>
+          <diffuse>0.2 0.4 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+</gazebo>
 
 </robot>

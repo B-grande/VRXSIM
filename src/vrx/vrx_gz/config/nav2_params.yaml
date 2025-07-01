@@ -1,33 +1,33 @@
 map_server:
   ros__parameters:
     use_sim_time: true
-    yaml_filename: ""               # (we load the map over /map topic)
+    yaml_filename: ""                # no file → subscribe to /map
     subscribe_to_map_topic: true
     map_topic: /map
 
-
-
 ################################################################################
-# SLAM Toolbox (if you want SLAM instead of AMCL)
+# SLAM Toolbox (online, live only)
 ################################################################################
 slam_toolbox:
   ros__parameters:
     use_sim_time: true
-    map_file_name: ""               # save/load file (empty = live only)
+    mode: online_async
+    map_file_name: ""                # live only, don’t save
+    resolution: 0.05                 # 5 cm grid
+    publish_period_sec: 0.5          # republish /map at 2 Hz
+    transform_publish_period_sec: 0.05  # broadcast map→odom at 20 Hz
     scan_topic: /wamv/sensors/lidars/laser_down/scan
     odom_topic: /wamv/odom
-    publish_period: 5.0
     max_laser_range: 30.0
-    # (drop in any of your slam_toolbox params here…)
 
 ################################################################################
-# LOCAL COSTMAP
+# LOCAL COSTMAP (rolling window around the robot)
 ################################################################################
 local_costmap:
   ros__parameters:
     use_sim_time: true
     global_frame: odom
-    robot_base_frame: wamv/base_link
+    robot_base_frame: wamv/wamv/base_link
     update_frequency: 5.0
     publish_frequency: 2.0
     rolling_window: true
@@ -42,7 +42,7 @@ local_costmap:
       laser_down:
         topic: /wamv/sensors/lidars/laser_down/scan
         data_type: "LaserScan"
-        sensor_frame: wamv/base_link
+        sensor_frame: wamv/wamv/base_link
         marking: true
         clearing: true
 
@@ -51,22 +51,19 @@ local_costmap:
       inflation_radius: 1.0
 
 ################################################################################
-# GLOBAL COSTMAP
+# GLOBAL COSTMAP (rolling window on /map)
 ################################################################################
 global_costmap:
   ros__parameters:
     use_sim_time: true
     global_frame: map
-    robot_base_frame: wamv/base_link
+    robot_base_frame: wamv/wamv/base_link
     update_frequency: 1.0
-    publish_frequency: 0.5
-    plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-
-    static_layer:
-      plugin: "nav2_costmap_2d::StaticLayer"
-      map_topic: /map
-      subscribe_to_updates: true
-      use_maximum: true
+    publish_frequency: 1.0
+    width: 100.0
+    height: 100.0
+    resolution: 0.5
+    plugins: ["obstacle_layer", "inflation_layer"]
 
     obstacle_layer:
       plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -74,16 +71,13 @@ global_costmap:
       laser_down:
         topic: /wamv/sensors/lidars/laser_down/scan
         data_type: "LaserScan"
-        sensor_frame: wamv/base_link
+        sensor_frame: wamv/wamv/base_link
         marking: true
         clearing: true
 
     inflation_layer:
       plugin: "nav2_costmap_2d::InflationLayer"
       inflation_radius: 1.0
-
-
-      #denoise layer skimming cost map and 
 
 ################################################################################
 # PLANNER SERVER
@@ -137,7 +131,7 @@ bt_navigator:
   ros__parameters:
     use_sim_time: true
     global_frame: map
-    robot_base_frame: wamv/base_link
+    robot_base_frame: wamv/wamv/base_link
     odom_topic: /wamv/odom
     plugin_libraries: ["nav2_bt_navigator"]
     default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bringup/behavior_trees/navigate_to_pose.xml"
@@ -169,7 +163,7 @@ recoveries_server:
 collision_monitor:
   ros__parameters:
     use_sim_time: true
-    base_frame_id: wamv/base_link
+    base_frame_id: wamv/wamv/base_link
     odom_frame_id: odom
     observation_sources: ["laser_down_hard", "laser_down_soft"]
     polygons: ["HardZone", "SoftZone"]
@@ -217,7 +211,7 @@ docking_server:
     undock_linear_tolerance: 0.05
     undock_angular_tolerance: 0.1
     max_retries: 3
-    base_frame: wamv/base_link
+    base_frame: wamv/wamv/base_link
     fixed_frame: odom
     service_introspection_mode: "disabled"
 
@@ -234,16 +228,6 @@ docking_server:
       use_stall_detection: false
       filter_coef: 0.1
 
-    controller:
-      k_phi: 3.0
-      k_delta: 2.0
-      v_linear_min: 0.15
-      v_linear_max: 0.15
-      use_collision_detection: true
-      costmap_topic: "local_costmap/costmap_raw"
-      footprint_topic: "local_costmap/published_footprint"
-      transform_tolerance: 0.1
-
 ################################################################################
 # LIFECYCLE MANAGERS
 ################################################################################
@@ -251,7 +235,7 @@ lifecycle_manager_localization:
   ros__parameters:
     use_sim_time: true
     autostart: true
-    node_names: ["map_server"]
+    node_names: ["map_server", "slam_toolbox"]
 
 lifecycle_manager_navigation:
   ros__parameters:
@@ -267,4 +251,3 @@ lifecycle_manager_navigation:
       - waypoint_follower
       - recoveries_server
       - collision_monitor
-      - docking_server
