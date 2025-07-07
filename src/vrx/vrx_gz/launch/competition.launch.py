@@ -16,7 +16,9 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import OpaqueFunction
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 import os
 
 import vrx_gz.launch
@@ -37,6 +39,7 @@ def launch(context, *args, **kwargs):
     extra_gz_args = LaunchConfiguration('extra_gz_args').perform(context)
     robot_name = LaunchConfiguration('name').perform(context)
     model_type = LaunchConfiguration('model').perform(context)
+    enable_localization = LaunchConfiguration('enable_localization').perform(context).lower() == 'true'
 
     launch_processes = []
 
@@ -58,6 +61,68 @@ def launch(context, *args, **kwargs):
 
     if (sim_mode == 'bridge' or sim_mode == 'full') and bridge_competition_topics:
         launch_processes.extend(vrx_gz.launch.competition_bridges(world_name_base, competition_mode))
+
+    # Add robot localization nodes if enabled
+    if enable_localization:
+        try:
+            vrx_gz_dir = get_package_share_directory('vrx_gz')
+            
+            # Local EKF node (odom frame)
+            ekf_odom_node = Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_se_odom',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ]
+            )
+            
+            # Global EKF node (map frame) 
+            ekf_map_node = Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_se_map',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ]
+            )
+            
+            # NavSat transform node for GPS
+            navsat_transform_node = Node(
+                package='robot_localization',
+                executable='navsat_transform_node',
+                name='navsat_transform',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ]
+            )
+            
+            launch_processes.extend([
+                ekf_odom_node,
+                ekf_map_node,
+                navsat_transform_node
+            ])
+            
+        except Exception as e:
+            print(f"Warning: Could not add localization nodes: {e}")
 
     return launch_processes
 
@@ -117,5 +182,9 @@ def generate_launch_description():
             'model',
             default_value='wam-v',
             description='SDF model to spawn'),
+        DeclareLaunchArgument(
+            'enable_localization',
+            default_value='False',
+            description='True to enable robot localization nodes (EKF + NavSat)'),
         OpaqueFunction(function=launch),
     ])
