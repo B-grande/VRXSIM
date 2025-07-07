@@ -14,7 +14,7 @@
 
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -120,6 +120,31 @@ def launch(context, *args, **kwargs):
                 ekf_map_node,
                 navsat_transform_node
             ])
+            
+            # Add thruster converter for WAM-V navigation
+            thruster_converter_node = ExecuteProcess(
+                cmd=[
+                    'python3', 
+                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/cmd_vel_to_thrusters.py'
+                ],
+                name='cmd_vel_to_thrusters',
+                output='screen'
+            )
+            
+            launch_processes.append(thruster_converter_node)
+            
+            # Add RViz for visualization
+            rviz_node = Node(
+                package='rviz2',
+                namespace='',
+                executable='rviz2',
+                name='rviz2',
+                arguments=['-d' + os.path.join(get_package_share_directory('vrx_gazebo'), 'config', 'rviz_vrx_rsp.rviz')],
+                parameters=[{'use_sim_time': True}],
+                output='screen'
+            )
+            
+            launch_processes.append(rviz_node)
             
         except Exception as e:
             print(f"Warning: Could not add localization nodes: {e}")
