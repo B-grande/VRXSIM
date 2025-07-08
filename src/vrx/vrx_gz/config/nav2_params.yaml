@@ -37,86 +37,44 @@ controller_server:
       xy_goal_tolerance: 0.5
       yaw_goal_tolerance: 0.3
     
-    # MPPI Controller
+    # Simplified MPPI Controller for debugging
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
-      time_steps: 56
-      model_dt: 0.05
-      batch_size: 2000
+      time_steps: 30
+      model_dt: 0.1
+      batch_size: 1000
       vx_std: 0.2
-      vy_std: 0.2
+      vy_std: 0.0
       wz_std: 0.4
-      vx_max: 0.5
-      vx_min: -0.2
-      vy_max: 0.5
-      wz_max: 1.9
+      vx_max: 0.3
+      vx_min: -0.1
+      vy_max: 0.0
+      wz_max: 1.0
       iteration_count: 1
-      prune_distance: 1.7
-      transform_tolerance: 0.1
-      temperature: 0.3
-      gamma: 0.015
-      motion_model: "Omni"
-      visualize: false
+      prune_distance: 2.0
+      transform_tolerance: 0.5
+      temperature: 0.5
+      gamma: 0.1
+      motion_model: "DiffDrive"
+      visualize: true
       regenerate_noises: false
-      TrajectoryVisualizer:
-        trajectory_step: 5
-        time_step: 3
-      AckermannConstraints:
-        min_turning_r: 0.2
-      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAngleCritic", "PathFollowCritic", "PathAlignCritic", "PreferForwardCritic"]
-      ConstraintCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 4.0
+      critics: ["GoalCritic", "ObstaclesCritic"]
       GoalCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 5.0
-        threshold_to_consider: 1.4
-      GoalAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 3.0
-        threshold_to_consider: 0.5
-      PreferForwardCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 5.0
-        threshold_to_consider: 0.5
+        cost_weight: 10.0
+        threshold_to_consider: 5.0
       ObstaclesCritic:
         enabled: true
         cost_power: 1
-        repulsion_weight: 1.5
-        critical_weight: 20.0
+        repulsion_weight: 5.0
+        critical_weight: 40.0
         consider_footprint: false
         collision_cost: 10000.0
-        collision_margin_distance: 0.1
-        near_goal_distance: 0.5
-        inflation_radius: 0.55
-        cost_scaling_factor: 10.0
-      PathAlignCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 14.0
-        max_path_occupancy_ratio: 0.05
-        trajectory_point_step: 1
-        threshold_to_consider: 0.5
-        offset_from_path: 1.0
-        use_path_orientations: false
-      PathFollowCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 5.0
-        offset_from_path: 1.0
-        threshold_to_consider: 1.4
-      PathAngleCritic:
-        enabled: true
-        cost_power: 1
-        cost_weight: 2.0
-        offset_from_path: 0.35
-        threshold_to_consider: 0.5
-        max_angle_to_furthest: 1.0
-        forward_preference: true
+        collision_margin_distance: 0.3
+        near_goal_distance: 2.0
+        inflation_radius: 1.0
+        cost_scaling_factor: 3.0
 
 smoother_server:
   ros__parameters:
@@ -193,28 +151,20 @@ collision_monitor:
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "cmd_vel"
     transform_tolerance: 0.2
-    source_timeout: 1.0
-    stop_pub_timeout: 2.0
+    source_timeout: 5.0
+    stop_pub_timeout: 5.0
     observation_sources: ["scan"]
     scan:
       type: "scan"
       topic: "/wamv/sensors/lidars/lidar_wamv_sensor/scan"
-    polygons: ["FootprintApproach", "FootprintStop"]
+    polygons: ["FootprintApproach"]
     FootprintApproach:
       type: "circle"
-      radius: 1.5
+      radius: 3.0
       action_type: "approach"
-      min_points: 4
-      slowdown_ratio: 0.3
-      time_before_collision: 2.0
-      simulation_time_step: 0.1
-      enabled: True
-    FootprintStop:
-      type: "circle"
-      radius: 0.8
-      action_type: "stop"
-      min_points: 4
-      time_before_collision: 1.0
+      min_points: 3
+      slowdown_ratio: 0.8
+      time_before_collision: 5.0
       simulation_time_step: 0.1
       enabled: True
 
@@ -265,6 +215,7 @@ docking_server:
 local_costmap:
   local_costmap:
     ros__parameters:
+      use_sim_time: True
       update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
@@ -304,6 +255,7 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
+      use_sim_time: True
       update_frequency: 1.0
       publish_frequency: 1.0
       global_frame: map

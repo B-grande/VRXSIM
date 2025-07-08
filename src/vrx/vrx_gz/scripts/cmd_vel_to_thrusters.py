@@ -10,10 +10,26 @@ class CmdVelToThrusters(Node):
     def __init__(self):
         super().__init__('cmd_vel_to_thrusters')
         
-        # Subscribe to Nav2's cmd_vel output
+        # Subscribe to Nav2's cmd_vel output (try both topics)
         self.cmd_vel_sub = self.create_subscription(
             Twist,
             '/cmd_vel',
+            self.cmd_vel_callback,
+            10
+        )
+        
+        # Also subscribe to controller's raw output
+        self.cmd_vel_raw_sub = self.create_subscription(
+            Twist,
+            '/cmd_vel_nav',
+            self.cmd_vel_callback,
+            10
+        )
+        
+        # Also try velocity smoother output
+        self.cmd_vel_smoothed_sub = self.create_subscription(
+            Twist,
+            '/cmd_vel_smoothed',
             self.cmd_vel_callback,
             10
         )
@@ -24,10 +40,12 @@ class CmdVelToThrusters(Node):
         
         # Maritime vehicle parameters
         self.max_thrust = 500.0  # Maximum thruster force (Newton-mode)
-        self.max_linear_vel = 2.0  # Max linear velocity from nav2 params
-        self.max_angular_vel = 1.0  # Max angular velocity from nav2 params
+        self.max_linear_vel = 0.5  # Match Nav2 MPPI vx_max
+        self.max_angular_vel = 1.9  # Match Nav2 MPPI wz_max
+        self.thruster_separation = 1.0  # Distance between thrusters (meters)
         
         self.get_logger().info('WAM-V Thruster Controller Started')
+        self.get_logger().info(f'Max velocities: linear={self.max_linear_vel}, angular={self.max_angular_vel}')
         
     def cmd_vel_callback(self, msg):
         """Convert Twist message to differential thrust commands"""
@@ -36,14 +54,20 @@ class CmdVelToThrusters(Node):
         linear_x = msg.linear.x  # Forward/backward
         angular_z = msg.angular.z  # Turning
         
+        # Log all cmd_vel messages for debugging
+        self.get_logger().info(f'Received cmd_vel: linear.x={linear_x:.3f}, angular.z={angular_z:.3f}')
+        
         # Differential drive kinematics for surface vessel
+        # Convert angular velocity to linear wheel speeds
+        angular_component = angular_z * (self.thruster_separation / 2.0)
+        
         # Left and right thrust based on linear + angular components
-        left_thrust_raw = linear_x - angular_z
-        right_thrust_raw = linear_x + angular_z
+        left_vel = linear_x - angular_component
+        right_vel = linear_x + angular_component
         
         # Scale to thruster range (-max_thrust to +max_thrust)
-        left_thrust = self.scale_thrust(left_thrust_raw)
-        right_thrust = self.scale_thrust(right_thrust_raw)
+        left_thrust = self.scale_thrust(left_vel)
+        right_thrust = self.scale_thrust(right_vel)
         
         # Publish thruster commands
         left_msg = Float64()
@@ -54,18 +78,16 @@ class CmdVelToThrusters(Node):
         self.left_thrust_pub.publish(left_msg)
         self.right_thrust_pub.publish(right_msg)
         
-        # Log for debugging
-        if abs(linear_x) > 0.01 or abs(angular_z) > 0.01:
-            self.get_logger().info(f'Cmd: lin={linear_x:.2f}, ang={angular_z:.2f} -> Thrust: L={left_thrust:.1f}, R={right_thrust:.1f}')
+        # Always log for debugging
+        self.get_logger().info(f'Thrust commands: L={left_thrust:.1f}N, R={right_thrust:.1f}N')
     
     def scale_thrust(self, vel_component):
         """Scale velocity component to thruster force"""
-        # Clamp to maximum velocity range
-        max_vel = max(self.max_linear_vel, self.max_angular_vel)
-        clamped_vel = max(-max_vel, min(max_vel, vel_component))
+        # Clamp to maximum velocity range  
+        clamped_vel = max(-self.max_linear_vel, min(self.max_linear_vel, vel_component))
         
         # Scale to thrust range
-        thrust = (clamped_vel / max_vel) * self.max_thrust
+        thrust = (clamped_vel / self.max_linear_vel) * self.max_thrust
         return float(thrust)
 
 def main(args=None):
