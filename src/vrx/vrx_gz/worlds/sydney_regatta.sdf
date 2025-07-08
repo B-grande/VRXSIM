@@ -352,10 +352,11 @@
       <uri>coast_waves</uri>
     </include>
 
-    <!-- Seafloor (visible box) -->
+    <!-- Sloped seafloor (shallow at spawn, deeper outward) -->
     <model name="seafloor_box">
       <static>true</static>
-      <pose>0 0 -2 0 0 0</pose> <!-- Positioned 2 meters below water surface -->
+      <!-- Tilted to create depth gradient: shallow at spawn (-532, 162), deeper outward -->
+      <pose>0 0 -10 0.01 0.009 0</pose> <!-- Gentler slope: ~0.6° down in X and ~0.5° down in Y -->
       <link name="link">
         <collision name="collision">
           <geometry>

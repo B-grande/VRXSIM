@@ -11,6 +11,9 @@ bt_navigator:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
     navigate_through_poses:
       plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+    # Enable path progress visualization
+    publish_path_progress: true
+    path_update_frequency: 10.0
 
 controller_server:
   ros__parameters:
@@ -24,57 +27,88 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"]
     controller_plugins: ["FollowPath"]
 
-    # Progress checker parameters
+    # Progress checker parameters - relaxed for marine vehicles
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      required_movement_radius: 0.3
+      movement_time_allowance: 15.0
     
-    # Goal checker parameters
+    # Goal checker parameters - relaxed for waypoint transitions
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5
-      yaw_goal_tolerance: 0.3
+      xy_goal_tolerance: 1.0
+      yaw_goal_tolerance: 0.5
     
-    # Simplified MPPI Controller for debugging
+    # MPPI Controller optimized for marine vehicle
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
-      time_steps: 30
-      model_dt: 0.1
-      batch_size: 1000
+      time_steps: 56
+      model_dt: 0.05
+      batch_size: 2000
       vx_std: 0.2
       vy_std: 0.0
-      wz_std: 0.4
-      vx_max: 0.3
-      vx_min: -0.1
+      wz_std: 0.2
+      vx_max: 0.5
+      vx_min: 0.0
       vy_max: 0.0
-      wz_max: 1.0
+      wz_max: 0.8
       iteration_count: 1
-      prune_distance: 2.0
-      transform_tolerance: 0.5
-      temperature: 0.5
-      gamma: 0.1
-      motion_model: "DiffDrive"
+      prune_distance: 1.7
+      transform_tolerance: 0.1
+      temperature: 0.3
+      gamma: 0.015
+      motion_model: "Ackermann"
       visualize: true
       regenerate_noises: false
-      critics: ["GoalCritic", "ObstaclesCritic"]
-      GoalCritic:
+      enforce_path_inversion: false
+      inversion_xy_tolerance: 0.2
+      inversion_yaw_tolerance: 0.4
+      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAngleCritic", "PathFollowCritic", "PreferForwardCritic"]
+      ConstraintCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 10.0
-        threshold_to_consider: 5.0
+        cost_weight: 4.0
       ObstaclesCritic:
         enabled: true
         cost_power: 1
-        repulsion_weight: 5.0
-        critical_weight: 40.0
+        repulsion_weight: 1.5
+        critical_weight: 20.0
         consider_footprint: false
         collision_cost: 10000.0
-        collision_margin_distance: 0.3
-        near_goal_distance: 2.0
-        inflation_radius: 1.0
-        cost_scaling_factor: 3.0
+        collision_margin_distance: 0.1
+        near_goal_distance: 0.5
+        inflation_radius: 0.3
+        cost_scaling_factor: 10.0
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_path: 0.2
+        threshold_to_consider: 0.5
+        max_angle_to_furthest: 1.0
+        forward_preference: true
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_path: 0.2
+        threshold_to_consider: 1.4
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 0.5
 
 smoother_server:
   ros__parameters:
@@ -100,6 +134,11 @@ planner_server:
 route_server:
   ros__parameters:
     use_sim_time: True
+    route_plugins: ["simple_route"]
+    simple_route:
+      plugin: "nav2_simple_route_server::SimpleRouteServer"
+      expected_route_frequency: 10.0
+      enable_route_optimization: true
 
 behavior_server:
   ros__parameters:
@@ -153,11 +192,18 @@ collision_monitor:
     transform_tolerance: 0.2
     source_timeout: 5.0
     stop_pub_timeout: 5.0
-    observation_sources: ["scan"]
+    observation_sources: ["scan", "depth_sensor"]
     scan:
       type: "scan"
       topic: "/wamv/sensors/lidars/lidar_wamv_sensor/scan"
-    polygons: ["FootprintApproach"]
+    # Depth-based collision avoidance for shallow water
+    depth_sensor:
+      type: "pointcloud"
+      topic: "/wamv/sensors/lidars/lidar_wamv_sensor/points"
+      min_height: -10.0  # 10m max depth
+      max_height: -1.0   # 1m below surface - shallow water detection zone
+    polygons: ["FootprintApproach", "ShallowWaterSlowdown", "CriticalDepthStop"]
+    # Standard obstacle avoidance
     FootprintApproach:
       type: "circle"
       radius: 3.0
@@ -167,6 +213,28 @@ collision_monitor:
       time_before_collision: 5.0
       simulation_time_step: 0.1
       enabled: True
+    # Slowdown zone: 8 inches below draft
+    ShallowWaterSlowdown:
+      type: "circle"
+      radius: 5.0
+      action_type: "slowdown"
+      min_points: 2
+      slowdown_ratio: 0.3  # Slow to 30% speed
+      linear_limit: 0.15   # Max 0.15 m/s in shallow water
+      angular_limit: 0.4   # Reduced turning speed
+      source_timeout: 2.0
+      enabled: True
+      # Depth threshold: -0.203m (8 inches below surface)
+      height_limit: -0.203
+    # Hard stop zone: 3 inches below draft (critical depth)
+    CriticalDepthStop:
+      type: "circle" 
+      radius: 2.0
+      action_type: "stop"
+      min_points: 1  # Single point triggers stop
+      enabled: True
+      # Critical depth threshold: -0.076m (3 inches below surface)
+      height_limit: -0.076
 
 waypoint_follower:
   ros__parameters:
@@ -175,6 +243,10 @@ waypoint_follower:
     stop_on_failure: false
     action_server_result_timeout: 900.0
     waypoint_task_executor_plugin: "wait_at_waypoint"
+    # Enable progress visualization
+    publish_waypoint_progress: true
+    publish_remaining_path: true
+    progress_update_frequency: 5.0
     wait_at_waypoint:
       plugin: "nav2_waypoint_follower::WaitAtWaypoint"
       enabled: True
@@ -250,6 +322,12 @@ local_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 4.0
           obstacle_min_range: 0.0
+          inf_is_valid: false
+        # Enable obstacle persistence and sharing
+        footprint_clearing_enabled: true
+        combination_method: 1
+        publish_observations: true
+        observation_persistence_time: 60.0
       always_send_full_costmap: True
 
 global_costmap:
@@ -261,16 +339,16 @@ global_costmap:
       global_frame: map
       robot_base_frame: wamv/wamv/base_link
       robot_radius: 1.0
-      resolution: 0.05
+      resolution: 0.2
       track_unknown_space: true
       rolling_window: true
-      width: 100
-      height: 100
+      width: 800
+      height: 800
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: depth_scan
+        observation_sources: depth_scan local_observations
         depth_scan:
           topic: /wamv/sensors/lidars/lidar_wamv_sensor/scan
           max_obstacle_height: 0.5
@@ -281,6 +359,21 @@ global_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 8.0
           obstacle_min_range: 0.0
+          inf_is_valid: false
+        # Subscribe to local costmap observations for persistent mapping
+        local_observations:
+          topic: /local_costmap/published_observations
+          max_obstacle_height: 2.0
+          clearing: False
+          marking: True
+          data_type: "PointCloud"
+          obstacle_max_range: 8.0
+          obstacle_min_range: 0.0
+        # Enable persistent obstacle tracking
+        footprint_clearing_enabled: true
+        max_obstacle_height: 2.0
+        combination_method: 1
+        observation_buffering_time: 10.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
