@@ -80,6 +80,9 @@ def launch(context, *args, **kwargs):
                         'localization.yaml'
                     ]),
                     {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('/odometry/filtered', '/odometry/filtered_odom')
                 ]
             )
             
@@ -96,6 +99,9 @@ def launch(context, *args, **kwargs):
                         'localization.yaml'
                     ]),
                     {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('/odometry/filtered', '/odometry/filtered_map')
                 ]
             )
             
