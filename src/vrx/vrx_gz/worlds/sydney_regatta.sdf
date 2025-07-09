@@ -380,74 +380,215 @@
         </visual>
       </link>
       
-      <!-- Main sandbar ridge - elongated like real sandbars -->
-      <link name="sandbar_base">
-        <pose>0 0 1.0 0 0 0.3</pose> <!-- Slightly angled like natural formations -->
-        <collision name="sandbar_base_collision">
+      <!-- FIRST SANDBAR - SHALLOW (1m below surface) - CURVED SMOOTH GRADIENTS -->
+      <link name="sandbar1_base">
+        <pose>-60 0 1.0 0 0 0.3</pose> <!-- Left portion of original footprint -->
+        <collision name="sandbar1_base_collision">
           <geometry>
-            <box>
-              <size>250 60 1.0</size> <!-- Base layer thickness -->
-            </box>
+            <cylinder>
+              <radius>40</radius> <!-- Circular base -->
+              <length>1.0</length>
+            </cylinder>
           </geometry>
         </collision>
-        <visual name="sandbar_base_visual">
+        <visual name="sandbar1_base_visual">
           <geometry>
-            <box>
-              <size>250 60 1.0</size>
-            </box>
+            <cylinder>
+              <radius>40</radius>
+              <length>1.0</length>
+            </cylinder>
           </geometry>
           <material>
-            <ambient>0.3 0.25 0.18 1</ambient>
-            <diffuse>0.3 0.25 0.18 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
+            <ambient>1.0 0.8 0.2 1</ambient> <!-- Bright yellow for visibility -->
+            <diffuse>1.0 0.8 0.2 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+            <emissive>0.3 0.2 0.0 1</emissive> <!-- Glowing effect -->
           </material>
         </visual>
       </link>
       
-      <!-- Secondary sandbar layer - middle gradient -->
-      <link name="sandbar_mid">
-        <pose>0 0 1.5 0 0 0.3</pose> <!-- Middle layer at -1.5m depth -->
-        <collision name="sandbar_mid_collision">
+      <!-- Gradient layer 1: Base to Mid transition -->
+      <link name="sandbar1_grad1">
+        <pose>-60 0 1.25 0 0 0.3</pose>
+        <collision name="sandbar1_grad1_collision">
           <geometry>
-            <box>
-              <size>180 45 1.0</size>
-            </box>
+            <cylinder>
+              <radius>35</radius> <!-- Smaller radius for gradient -->
+              <length>0.5</length>
+            </cylinder>
           </geometry>
         </collision>
-        <visual name="sandbar_mid_visual">
+        <visual name="sandbar1_grad1_visual">
           <geometry>
-            <box>
-              <size>180 45 1.0</size>
-            </box>
+            <cylinder>
+              <radius>35</radius>
+              <length>0.5</length>
+            </cylinder>
           </geometry>
           <material>
-            <ambient>0.4 0.35 0.25 1</ambient>
-            <diffuse>0.4 0.35 0.25 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
+            <ambient>1.0 0.7 0.1 1</ambient> <!-- Transition color -->
+            <diffuse>1.0 0.7 0.1 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+            <emissive>0.35 0.2 0.0 1</emissive>
           </material>
         </visual>
       </link>
       
-      <!-- Shallowest part of sandbar - 1m below surface -->
-      <link name="sandbar_top">
-        <pose>0 0 2.0 0 0 0.3</pose> <!-- Top at exactly -1m depth -->
-        <collision name="sandbar_top_collision">
+      <link name="sandbar1_mid">
+        <pose>-60 0 1.5 0 0 0.3</pose> <!-- Shallow sandbar mid layer -->
+        <collision name="sandbar1_mid_collision">
           <geometry>
-            <box>
-              <size>120 30 1.0</size> <!-- Top layer thickness -->
-            </box>
+            <cylinder>
+              <radius>30</radius> <!-- Medium radius -->
+              <length>1.0</length>
+            </cylinder>
           </geometry>
         </collision>
-        <visual name="sandbar_top_visual">
+        <visual name="sandbar1_mid_visual">
           <geometry>
-            <box>
-              <size>120 30 1.0</size>
-            </box>
+            <cylinder>
+              <radius>30</radius>
+              <length>1.0</length>
+            </cylinder>
           </geometry>
           <material>
-            <ambient>0.5 0.45 0.35 1</ambient>
-            <diffuse>0.5 0.45 0.35 1</diffuse>
-            <specular>0.15 0.15 0.15 1</specular>
+            <ambient>1.0 0.6 0.0 1</ambient> <!-- Bright orange -->
+            <diffuse>1.0 0.6 0.0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+            <emissive>0.4 0.2 0.0 1</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Gradient layer 2: Mid to Top transition -->
+      <link name="sandbar1_grad2">
+        <pose>-60 0 1.75 0 0 0.3</pose>
+        <collision name="sandbar1_grad2_collision">
+          <geometry>
+            <cylinder>
+              <radius>25</radius> <!-- Smaller radius -->
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="sandbar1_grad2_visual">
+          <geometry>
+            <cylinder>
+              <radius>25</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>1.0 0.3 0.0 1</ambient> <!-- Transition to red -->
+            <diffuse>1.0 0.3 0.0 1</diffuse>
+            <specular>0.6 0.6 0.6 1</specular>
+            <emissive>0.45 0.1 0.0 1</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="sandbar1_top">
+        <pose>-60 0 2.0 0 0 0.3</pose> <!-- Shallow top - 1m below water surface (correct) -->
+        <collision name="sandbar1_top_collision">
+          <geometry>
+            <cylinder>
+              <radius>20</radius> <!-- Smallest radius for peak -->
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="sandbar1_top_visual">
+          <geometry>
+            <cylinder>
+              <radius>20</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>1.0 0.0 0.0 1</ambient> <!-- Bright red for maximum visibility -->
+            <diffuse>1.0 0.0 0.0 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+            <emissive>0.5 0.0 0.0 1</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- SECOND SANDBAR - DEEPER (3m below surface) - CURVED SMOOTH GRADIENTS -->
+      <link name="sandbar2_base">
+        <pose>60 0 1.0 0 0 0.3</pose> <!-- Right portion of original footprint -->
+        <collision name="sandbar2_base_collision">
+          <geometry>
+            <cylinder>
+              <radius>40</radius> <!-- Circular base -->
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="sandbar2_base_visual">
+          <geometry>
+            <cylinder>
+              <radius>40</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.0 0.8 1.0 1</ambient> <!-- Bright cyan for deep sandbar -->
+            <diffuse>0.0 0.8 1.0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+            <emissive>0.0 0.3 0.4 1</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Gradient layer 3: Base to Top transition for deep sandbar -->
+      <link name="sandbar2_grad1">
+        <pose>60 0 0.5 0 0 0.3</pose>
+        <collision name="sandbar2_grad1_collision">
+          <geometry>
+            <cylinder>
+              <radius>35</radius> <!-- Intermediate radius -->
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="sandbar2_grad1_visual">
+          <geometry>
+            <cylinder>
+              <radius>35</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.0 0.4 1.0 1</ambient> <!-- Transition to deeper blue -->
+            <diffuse>0.0 0.4 1.0 1</diffuse>
+            <specular>0.6 0.6 0.6 1</specular>
+            <emissive>0.0 0.15 0.45 1</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="sandbar2_top">
+        <pose>60 0 0.0 0 0 0.3</pose> <!-- Deep top - 3m below surface (correct) -->
+        <collision name="sandbar2_top_collision">
+          <geometry>
+            <cylinder>
+              <radius>30</radius> <!-- Medium radius for deep peak -->
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="sandbar2_top_visual">
+          <geometry>
+            <cylinder>
+              <radius>30</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.0 0.0 1.0 1</ambient> <!-- Bright blue for deep water -->
+            <diffuse>0.0 0.0 1.0 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+            <emissive>0.0 0.0 0.5 1</emissive>
           </material>
         </visual>
       </link>
@@ -500,24 +641,44 @@
         </visual>
       </link>
       
-      <!-- Joints to connect all sandbar components -->
-      <joint name="seafloor_to_base" type="fixed">
+      <!-- Joints to connect all sandbar components with smooth gradients -->
+      <joint name="seafloor_to_sandbar1_base" type="fixed">
         <parent>seafloor_base</parent>
-        <child>sandbar_base</child>
+        <child>sandbar1_base</child>
       </joint>
-      <joint name="base_to_mid" type="fixed">
-        <parent>sandbar_base</parent>
-        <child>sandbar_mid</child>
+      <joint name="sandbar1_base_to_grad1" type="fixed">
+        <parent>sandbar1_base</parent>
+        <child>sandbar1_grad1</child>
       </joint>
-      <joint name="mid_to_top" type="fixed">
-        <parent>sandbar_mid</parent>
-        <child>sandbar_top</child>
+      <joint name="sandbar1_grad1_to_mid" type="fixed">
+        <parent>sandbar1_grad1</parent>
+        <child>sandbar1_mid</child>
       </joint>
-      <joint name="base_to_secondary" type="fixed">
+      <joint name="sandbar1_mid_to_grad2" type="fixed">
+        <parent>sandbar1_mid</parent>
+        <child>sandbar1_grad2</child>
+      </joint>
+      <joint name="sandbar1_grad2_to_top" type="fixed">
+        <parent>sandbar1_grad2</parent>
+        <child>sandbar1_top</child>
+      </joint>
+      <joint name="seafloor_to_sandbar2_base" type="fixed">
+        <parent>seafloor_base</parent>
+        <child>sandbar2_base</child>
+      </joint>
+      <joint name="sandbar2_base_to_grad1" type="fixed">
+        <parent>sandbar2_base</parent>
+        <child>sandbar2_grad1</child>
+      </joint>
+      <joint name="sandbar2_grad1_to_top" type="fixed">
+        <parent>sandbar2_grad1</parent>
+        <child>sandbar2_top</child>
+      </joint>
+      <joint name="seafloor_to_secondary" type="fixed">
         <parent>seafloor_base</parent>
         <child>sandbar_secondary</child>
       </joint>
-      <joint name="base_to_tertiary" type="fixed">
+      <joint name="seafloor_to_tertiary" type="fixed">
         <parent>seafloor_base</parent>
         <child>sandbar_tertiary</child>
       </joint>
