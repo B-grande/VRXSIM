@@ -138,7 +138,19 @@ def launch(context, *args, **kwargs):
             )
             
             launch_processes.append(thruster_converter_node)
+
+            # Add waypoint bridge node for Vizanti/Nav2 integration
+            waypoint_bridge_node = ExecuteProcess(
+                cmd=[
+                    'python3',
+                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/waypoint_bridge.py'
+                ],
+                name='waypoint_bridge',
+                output='screen'
+            )
             
+            launch_processes.append(waypoint_bridge_node)
+
             # Add RViz for visualization
             rviz_node = Node(
                 package='rviz2',
