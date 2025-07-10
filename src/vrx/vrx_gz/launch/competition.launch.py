@@ -118,6 +118,13 @@ def launch(context, *args, **kwargs):
                         'localization.yaml'
                     ]),
                     {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('/gps/fix', '/wamv/sensors/gps/gps/fix'),
+                    ('/imu/data', '/wamv/sensors/imu/imu/data'),
+                    ('/odometry/filtered', '/odometry/filtered_odom'),
+                    ('/odometry/gps', '/odometry/gps'),
+                    ('/gps/filtered', '/gps/filtered')                 
                 ]
             )
             
@@ -129,7 +136,7 @@ def launch(context, *args, **kwargs):
             
             # Add thruster converter for WAM-V navigation
             thruster_converter_node = ExecuteProcess(
-                cmd=[
+                cmd=[   
                     'python3', 
                     '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/cmd_vel_to_thrusters.py'
                 ],
