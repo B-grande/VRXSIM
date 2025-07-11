@@ -81,9 +81,7 @@ def launch(context, *args, **kwargs):
                     ]),
                     {'use_sim_time': True}
                 ],
-                remappings=[
-                    ('/odometry/filtered', '/odometry/filtered_odom')
-                ]
+               
             )
             
             # Global EKF node (map frame) 
@@ -100,38 +98,15 @@ def launch(context, *args, **kwargs):
                     ]),
                     {'use_sim_time': True}
                 ],
-                remappings=[
-                    ('/odometry/filtered', '/odometry/filtered_map')
-                ]
+                
+                
             )
             
-            # NavSat transform node for GPS
-            navsat_transform_node = Node(
-                package='robot_localization',
-                executable='navsat_transform_node',
-                name='navsat_transform',
-                output='screen',
-                parameters=[
-                    PathJoinSubstitution([
-                        vrx_gz_dir,
-                        'config',
-                        'localization.yaml'
-                    ]),
-                    {'use_sim_time': True}
-                ],
-                remappings=[
-                    ('/gps/fix', '/wamv/sensors/gps/gps/fix'),
-                    ('/imu/data', '/wamv/sensors/imu/imu/data'),
-                    ('/odometry/filtered', '/odometry/filtered_odom'),
-                    ('/odometry/gps', '/odometry/gps'),
-                    ('/gps/filtered', '/gps/filtered')                 
-                ]
-            )
+            
             
             launch_processes.extend([
                 ekf_odom_node,
                 ekf_map_node,
-                navsat_transform_node
             ])
             
             # Add thruster converter for WAM-V navigation
@@ -170,6 +145,19 @@ def launch(context, *args, **kwargs):
             )
             
             launch_processes.append(rviz_node)
+
+            # Add GNSS UTM node for GPS to odometry conversion
+            gnss_node = ExecuteProcess(
+                cmd=[
+                    'python3',
+                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/GNSS.py',
+                    '--ros-args',
+                    '-p', 'use_sim_time:=true'
+                ],
+                name='gnss_utm_node',
+                output='screen'
+            )
+            launch_processes.append(gnss_node)
             
         except Exception as e:
             print(f"Warning: Could not add localization nodes: {e}")
