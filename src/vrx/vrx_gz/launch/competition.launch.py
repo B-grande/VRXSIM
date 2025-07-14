@@ -68,46 +68,63 @@ def launch(context, *args, **kwargs):
             vrx_gz_dir = get_package_share_directory('vrx_gz')
             
             # Local EKF node (odom frame)
+
             ekf_odom_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
-                name='ekf_se_odom',
+                name='ekf_local',
                 output='screen',
                 parameters=[
                     PathJoinSubstitution([
                         vrx_gz_dir,
                         'config',
-                        'localization.yaml'
+                        'ekf_local.yaml'
                     ]),
                     {'use_sim_time': True}
                 ],
-               
+                remappings=[
+                    ('/odometry/filtered', '/odometry/local')
+                ]
             )
-            
-            # Global EKF node (map frame) 
+
+            # Global EKF node (map frame)
+
             ekf_map_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
-                name='ekf_se_map',
+                name='ekf_global',
                 output='screen',
                 parameters=[
                     PathJoinSubstitution([
                         vrx_gz_dir,
                         'config',
-                        'localization.yaml'
+                        'ekf_global.yaml'
                     ]),
                     {'use_sim_time': True}
                 ],
-                
-                
+                remappings=[
+                    ('/odometry/filtered', '/odometry/global')
+                ]
             )
-            
-            
-            
+
             launch_processes.extend([
                 ekf_odom_node,
                 ekf_map_node,
             ])
+
+            # Add IMU covariance fixer node with correct topic remapping
+            imu_covariance_fixer_node = ExecuteProcess(
+                cmd=[
+                    'python3',
+                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/imu_covariance_fixer.py',
+                    '--ros-args',
+                    '-r', 'imu/data_raw:=/wamv/sensors/imu/imu/data',
+                    '-r', 'imu/data_fixed:=/wamv/sensors/imu/imu/data_fixed'
+                ],
+                name='imu_covariance_fixer',
+                output='screen'
+            )
+            launch_processes.append(imu_covariance_fixer_node)
             
             # Add thruster converter for WAM-V navigation
             thruster_converter_node = ExecuteProcess(

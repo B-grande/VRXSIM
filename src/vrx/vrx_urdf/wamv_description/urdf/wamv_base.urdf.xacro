@@ -121,6 +121,22 @@
       <mass value="180.0"/>
       <inertia ixx="120.0" ixy="0.0" ixz="0.0" iyy="393" iyz="0.0" izz="446.0"/>
     </inertial>
+
+    <!-- IMU mount link -->
+    <link name="${namespace}/imu_wamv_link"/>
+    <joint name="imu_mount_joint" type="fixed">
+      <parent link="${namespace}/base_link"/>
+      <child link="${namespace}/imu_wamv_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- IMU sensor link -->
+    <link name="${namespace}/imu_wamv_link/imu_wamv_sensor"/>
+    <joint name="imu_sensor_joint" type="fixed">
+      <parent link="${namespace}/imu_wamv_link"/>
+      <child link="${namespace}/imu_wamv_link/imu_wamv_sensor"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
   </link>
 
   <gazebo>
