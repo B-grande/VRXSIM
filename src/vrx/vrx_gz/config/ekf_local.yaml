@@ -24,7 +24,7 @@ ekf_local:
                    false, false, false,  # roll, pitch, yaw
                    true,  true,  true,   # X, Y, Z linear velocity
                    false, false, false,  # roll, pitch, yaw velocity
-                   false, false, false]  # X, Y, Z acceleration
+                   false, false, false]  # X, Y, Z acceleration @
     odom0_queue_size: 10
     odom0_differential: false
     odom0_relative: false
