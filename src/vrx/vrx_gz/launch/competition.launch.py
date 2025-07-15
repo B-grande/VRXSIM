@@ -67,11 +67,11 @@ def launch(context, *args, **kwargs):
         try:
             vrx_gz_dir = get_package_share_directory('vrx_gz')
             
-            # Single EKF localization node
-            ekf_localization_node = Node(
+            # EKF local node (odom frame)
+            ekf_local_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
-                name='ekf',
+                name='ekf_local',
                 output='screen',
                 parameters=[
                     PathJoinSubstitution([
@@ -82,11 +82,30 @@ def launch(context, *args, **kwargs):
                     {'use_sim_time': True}
                 ],
                 remappings=[
-                    ('/odometry/filtered', '/odometry/filtered')
+                    ('/odometry/filtered', '/odometry/local')
                 ]
             )
+            launch_processes.append(ekf_local_node)
 
-            launch_processes.append(ekf_localization_node)
+            # EKF global node (map frame)
+            ekf_global_node = Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_global',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('/odometry/filtered', '/odometry/global')
+                ]
+            )
+            launch_processes.append(ekf_global_node)
 
             # Add IMU covariance fixer node with correct topic remapping
             imu_covariance_fixer_node = ExecuteProcess(
@@ -150,6 +169,7 @@ def launch(context, *args, **kwargs):
                 output='screen'
             )
             launch_processes.append(gnss_node)
+
 
             
         except Exception as e:
