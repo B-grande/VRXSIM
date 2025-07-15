@@ -12,8 +12,12 @@ ekf_local:
     debug: false
     use_control: false
     odom_topic: /odometry/local
-    imu0: /imu/imu/data_fixed
-    imu0_config: [false, false, false, true, true, true, false, false, false, true, true, true, false, false, false]
+    imu0: /wamv/sensors/imu/data 
+    imu0_config: [false, false, false, 
+                  true, true, true, 
+                  false, false, false, 
+                  true, true, true, 
+                  false, false, false]
     imu0_nodelay: false
     imu0_differential: false
     imu0_relative: false
