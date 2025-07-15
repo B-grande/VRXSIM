@@ -15,11 +15,18 @@ class ImuCovarianceFixer(Node):
         self.pub = self.create_publisher(Imu, 'imu/data_fixed', 10)  # relative topic name for remapping
 
     def imu_callback(self, msg):
-        # Set orientation covariance to small nonzero values
-        msg.orientation_covariance = [0.01, 0.0, 0.0,
-                                      0.0, 0.01, 0.0,
-                                      0.0, 0.0, 0.01]
-        self.pub.publish(msg)
+        # Create a copy of the message to avoid in-place modification issues
+        new_msg = Imu()
+        new_msg.header = msg.header
+        new_msg.orientation = msg.orientation
+        new_msg.orientation_covariance = [0.01, 0.0, 0.0,
+                                          0.0, 0.01, 0.0,
+                                          0.0, 0.0, 0.01]
+        new_msg.angular_velocity = msg.angular_velocity
+        new_msg.angular_velocity_covariance = msg.angular_velocity_covariance
+        new_msg.linear_acceleration = msg.linear_acceleration
+        new_msg.linear_acceleration_covariance = msg.linear_acceleration_covariance
+        self.pub.publish(new_msg)
 
 def main(args=None):
     rclpy.init(args=args)
