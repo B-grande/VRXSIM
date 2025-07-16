@@ -68,7 +68,6 @@ def launch(context, *args, **kwargs):
             vrx_gz_dir = get_package_share_directory('vrx_gz')
             
             # Local EKF node (odom frame)
-
             ekf_odom_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
@@ -78,7 +77,7 @@ def launch(context, *args, **kwargs):
                     PathJoinSubstitution([
                         vrx_gz_dir,
                         'config',
-                        'ekf_local.yaml'
+                        'localization.yaml'
                     ]),
                     {'use_sim_time': True}
                 ],
@@ -87,8 +86,29 @@ def launch(context, *args, **kwargs):
                 ]
             )
 
-            # Global EKF node (map frame)
+            # NavSat Transform node
+            navsat_node = Node(
+                package='robot_localization',
+                executable='navsat_transform_node',
+                name='navsat_transform',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('imu/data', '/wamv/sensors/imu/imu/data'),
+                    ('gps/fix', '/wamv/sensors/gps/gps/fix'),
+                    ('odometry/filtered', '/do_not_use'),
+                    ('odometry/gps', '/odometry/gps')
+                ]
+            )
 
+            # Global EKF node (map frame)
             ekf_map_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
@@ -98,7 +118,7 @@ def launch(context, *args, **kwargs):
                     PathJoinSubstitution([
                         vrx_gz_dir,
                         'config',
-                        'ekf_global.yaml'
+                        'localization.yaml'
                     ]),
                     {'use_sim_time': True}
                 ],
@@ -110,22 +130,10 @@ def launch(context, *args, **kwargs):
             launch_processes.extend([
                 ekf_odom_node,
                 ekf_map_node,
+                navsat_node,
             ])
 
-            # Add IMU covariance fixer node with correct topic remapping
-            imu_covariance_fixer_node = ExecuteProcess(
-                cmd=[
-                    'python3',
-                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/imu_covariance_fixer.py',
-                    '--ros-args',
-                    '-r', 'imu/data_raw:=/wamv/sensors/imu/imu/data',
-                    '-r', 'imu/data_fixed:=/wamv/sensors/imu/imu/data_fixed'
-                ],
-                name='imu_covariance_fixer',
-                output='screen'
-            )
-            launch_processes.append(imu_covariance_fixer_node)
-            
+           
             # Add thruster converter for WAM-V navigation
             thruster_converter_node = ExecuteProcess(
                 cmd=[   
@@ -163,18 +171,7 @@ def launch(context, *args, **kwargs):
             
             launch_processes.append(rviz_node)
 
-            # Add GNSS UTM node for GPS to odometry conversion
-            gnss_node = ExecuteProcess(
-                cmd=[
-                    'python3',
-                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/GNSS.py',
-                    '--ros-args',
-                    '-p', 'use_sim_time:=true'
-                ],
-                name='gnss_utm_node',
-                output='screen'
-            )
-            launch_processes.append(gnss_node)
+           
             
         except Exception as e:
             print(f"Warning: Could not add localization nodes: {e}")
