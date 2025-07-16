@@ -103,12 +103,9 @@ def launch(context, *args, **kwargs):
                 remappings=[
                     ('imu/data', '/wamv/sensors/imu/imu/data'),
                     ('gps/fix', '/wamv/sensors/gps/gps/fix'),
-                    ('odometry/filtered', '/do_not_use'),
-                    ('odometry/gps', '/odometry/gps')
+                    ('odometry/filtered', '/odometry/local')
                 ]
             )
-
-            # Global EKF node (map frame)
             ekf_map_node = Node(
                 package='robot_localization',
                 executable='ekf_node',
