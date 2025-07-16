@@ -67,6 +67,16 @@ def launch(context, *args, **kwargs):
         try:
             vrx_gz_dir = get_package_share_directory('vrx_gz')
             
+            fix_imu_cov_proc = ExecuteProcess(
+                cmd=[
+                    'python3',
+                    '/home/ros2404/ros2_ws/src/vrx/vrx_gz/scripts/fix_imu_cov.py',
+                    
+                ],
+                name = 'fix_imu_cov',
+                output='screen'
+            )
+            launch_processes.append(fix_imu_cov_proc)
             # Local EKF node (odom frame)
             ekf_odom_node = Node(
                 package='robot_localization',
