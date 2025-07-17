@@ -82,7 +82,7 @@ ekf_global:
     # IMU
     imu0: /imu/corrected
     imu0_config: [false, false, false,  # pos
-                  true, true, true,  # vel
+                  false, false, false,  # vel
                   false, false, false,    # orientation (roll, pitch, yaw)
                   true, true, true,    # ang vel (roll, pitch, yaw)
                   false, false, false]
@@ -128,6 +128,7 @@ navsat_transform:
     frequency: 30.0
     zero_altitude: true
     use_odometry_yaw: true
+    provide_odom_frame: true
     imu0: /imu/corrected
     wait_for_datum: false
     broadcast_cartesian_transform: false
