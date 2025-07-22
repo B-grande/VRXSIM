@@ -113,7 +113,10 @@ def launch(context, *args, **kwargs):
                 remappings=[
                     ('imu/data', '/wamv/sensors/imu/imu/data'),
                     ('gps/fix', '/wamv/sensors/gps/gps/fix'),
-                    ('odometry/filtered', '/odometry/local')
+                    ('odometry/filtered', '/odometry/local'),
+
+                    ('/gps/filtered', '/gps/filtered'),
+                    ('/odometry/gps', '/odometry/gps'),
                 ]
             )
             ekf_map_node = Node(
@@ -135,9 +138,10 @@ def launch(context, *args, **kwargs):
             )
 
             launch_processes.extend([
+                navsat_node,
                 ekf_odom_node,
                 ekf_map_node,
-                navsat_node,
+                
             ])
 
            
