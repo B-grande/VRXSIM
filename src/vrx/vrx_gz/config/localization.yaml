@@ -58,7 +58,7 @@ ekf_global:
     # IMU
     imu0: /wamv/sensors/imu/imu/data
     imu0_config: [false, false, false,  # pos
-                  false, false, false,  # vel
+                  true, true, true,  # vel
                   false, false, false,    # orientation (roll, pitch, yaw)
                   true, true, true,    # ang vel (roll, pitch, yaw)
                   true, true, true]
