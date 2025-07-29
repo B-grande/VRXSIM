@@ -96,48 +96,48 @@ def launch(context, *args, **kwargs):
                 ]
             )
 
-            # # NavSat Transform node
-            # navsat_node = Node(
-            #     package='robot_localization',
-            #     executable='navsat_transform_node',
-            #     name='navsat_transform',
-            #     output='screen',
-            #     parameters=[
-            #         PathJoinSubstitution([
-            #             vrx_gz_dir,
-            #             'config',
-            #             'localization.yaml'
-            #         ]),
-            #         {'use_sim_time': True}
-            #     ],
-            #     remappings=[
-            #         ('imu/data', '/wamv/sensors/imu/imu/data'),
-            #         ('gps/fix', '/wamv/sensors/gps/gps/fix'),
-            #         ('odometry/filtered', '/odometry/local')
-            #     ]
-            # )
-            # ekf_map_node = Node(
-            #     package='robot_localization',
-            #     executable='ekf_node',
-            #     name='ekf_global',
-            #     output='screen',
-            #     parameters=[
-            #         PathJoinSubstitution([
-            #             vrx_gz_dir,
-            #             'config',
-            #             'localization.yaml'
-            #         ]),
-            #         {'use_sim_time': True}
-            #     ],
-            #     remappings=[
-            #         ('/odometry/filtered', '/odometry/global')
-            #     ]
-            # )
+            # NavSat Transform node
+            navsat_node = Node(
+                package='robot_localization',
+                executable='navsat_transform_node',
+                name='navsat_transform',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('imu/data', '/wamv/sensors/imu/imu/data'),
+                    ('gps/fix', '/wamv/sensors/gps/gps/fix'),
+                    ('odometry/filtered', '/odometry/local')
+                ]
+            )
+            ekf_map_node = Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_global',
+                output='screen',
+                parameters=[
+                    PathJoinSubstitution([
+                        vrx_gz_dir,
+                        'config',
+                        'localization.yaml'
+                    ]),
+                    {'use_sim_time': True}
+                ],
+                remappings=[
+                    ('/odometry/filtered', '/odometry/global')
+                ]
+            )
 
             launch_processes.extend([
                 ekf_odom_node,
-                # ekf_map_node,
-                # navsat_node,
+                ekf_map_node,
+                navsat_node,
             ])
 
            

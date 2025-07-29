@@ -3,6 +3,7 @@ ekf_local:
     frequency: 30.0
     publish_tf: true
     print_diagnostics: true
+    two_d_mode: true
     map_frame: map
     odom_frame: odom
     base_link_frame: wamv/wamv/base_link
@@ -17,7 +18,7 @@ ekf_local:
                   false, false, false   # ang vel (roll, pitch, yaw)
                   ]
     imu0_nodelay: false
-    imu0_differential: false
+    imu0_differential: true
     imu0_relative: false
     imu0_queue_size: 10
     imu0_remove_gravitational_acceleration: true
