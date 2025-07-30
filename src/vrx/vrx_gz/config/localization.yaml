@@ -13,13 +13,13 @@ ekf_local:
     imu0: /wamv/sensors/imu/imu/data
     imu0_config: [false, false, false,  # pos
                   true, true, false,  # vel
-                  false, false, false,    # orientation (roll, pitch, yaw)
-                  true, true, true, 
+                  true, true, true,    # orientation (roll, pitch, yaw)
+                  true, true, true,    # ang vel (roll, pitch, yaw)
                   true, true, true]   # ang vel (roll, pitch, yaw)
                   
     imu0_nodelay: false
     imu0_differential: true
-    imu0_relative: false
+    imu0_relative: true
     imu0_queue_size: 10
     imu0_remove_gravitational_acceleration: true
     # Covariances (all diagonal entries at least 1e-6)
@@ -59,13 +59,13 @@ ekf_global:
     imu0: /wamv/sensors/imu/imu/data
     imu0_config: [false, false, false,  # pos
                   true, true, false,  # vel
-                  false, false, false,    # orientation (roll, pitch, yaw)
+                  true, true, true,    # orientation (roll, pitch, yaw)
                   true, true, true,    # ang vel (roll, pitch, yaw)
                   true, true, true]
     use_control: false 
     imu0_nodelay: true
-    imu0_differential: false
-    imu0_relative: false
+    imu0_differential: true   
+    imu0_relative: true
     imu0_queue_size: 10
     imu0_remove_gravitational_acceleration: true
     # Covariances (all diagonal entries at least 1e-6)
