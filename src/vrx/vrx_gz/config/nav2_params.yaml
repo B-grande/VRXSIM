@@ -3,7 +3,7 @@ bt_navigator:
     use_sim_time: True
     global_frame: map
     robot_base_frame: wamv/wamv/base_link
-    odom_topic: /odometry/filtered_odom
+    odom_topic: /odometry/local
     bt_loop_duration: 10
     default_server_timeout: 20
     navigators: ['navigate_to_pose', 'navigate_through_poses']
@@ -138,7 +138,7 @@ velocity_smoother:
     min_velocity: [-0.2, 0.0, -1.9]
     max_accel: [2.5, 0.0, 3.2]
     max_decel: [-2.5, 0.0, -3.2]
-    odom_topic: "odometry/filtered_odom"
+    odom_topic: /odometry/local
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
